@@ -1,7 +1,11 @@
 {
-  "name": "rx-node-v5",
+  "name": "rx-node-vx",
   "version": "0.0.1",
   "description": "A port of the rx-node project for v5 and beyond",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/paulpdaniels/rx-node-vx.git"
+  },
   "main": "index.js",
   "scripts": {
     "test": "jest"
@@ -9,7 +13,7 @@
   "author": "paulpdaniels@gmail.com",
   "license": "MIT",
   "peerDependencies": {
-    "rxjs": "^5.4.3"
+    "rxjs": "^5.0.0"
   },
   "devDependencies": {
     "jest": "^20.0.4",

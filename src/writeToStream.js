@@ -1,26 +1,34 @@
 const Rx = require('rxjs');
 
-function pausableBuffered(pauser) {
-  return source => pauser.switchMap(
-    paused => paused ? Rx.Observable.never() : source
-  );
-}
-
 function writeToStream(source, stream, encoding) {
-  const pauser = new Rx.BehaviorSubject(false);
-  const drainer = Rx.Observable.fromEvent(stream, 'drain').mapTo(false);
+  const pauser = new Rx.BehaviorSubject(true);
+  const drainer = Rx.Observable.merge(
+    Rx.Observable.fromEvent(stream, 'drain').mapTo(false),
+    pauser
+  );
 
-  return source
-    .let(pausableBuffered(
-      Rx.Observable.merge(pauser, drainer)
-    ))
+  const hotSource = source.publish();
+
+  const sub = drainer
+    .takeUntil(hotSource.last())
+    .flatMap(paused => paused ?
+      hotSource.buffer(drainer.first(x => !x)).take(1) :
+      Rx.Observable.of(hotSource.takeUntil(drainer.first(x => x)))
+    )
+    .mergeAll()
+    // .flatMap(x => Array.isArray(x) ? x : Rx.Observable.of(x))
     .subscribe(
-      data => !stream.write(String(x), encoding) && pauser.next(true),
+      data => !stream.write(String(data), encoding) && pauser.next(true),
       err => stream.emit('error', err),
       () => {
         !stream._isStdio && stream.end();
       }
     );
+
+  pauser.next(false);
+  sub.add(hotSource.connect());
+
+  return sub;
 
 }
 
