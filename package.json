@@ -1,0 +1,18 @@
+{
+  "name": "rx-node-v5",
+  "version": "0.0.1",
+  "description": "A port of the rx-node project for v5 and beyond",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "paulpdaniels@gmail.com",
+  "license": "MIT",
+  "peerDependencies": {
+    "rxjs": "^5.4.3"
+  },
+  "devDependencies": {
+    "jest": "^20.0.4",
+    "streamtest": "^1.2.2"
+  }
+}
