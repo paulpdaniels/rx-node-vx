@@ -1,22 +1,34 @@
 const Rx = require('rxjs');
 
+const identity = x => x;
+const not = fn => (...args) => !fn(...args);
+const notIdentity = not(identity);
+
+function drainStream(paused, trigger) {
+  return source => paused ?
+    // Buffer this stream while we wait to become unpaused
+    source.buffer(trigger.first(notIdentity)).take(1) :
+    // Lift this stream so that it has the same order as the buffered stream
+    Rx.Observable.of(source.takeUntil(trigger.first(identity)))
+}
+
 function writeToStream(source, stream, encoding) {
+  // Used to trigger the pausing
   const pauser = new Rx.BehaviorSubject(true);
-  const drainer = Rx.Observable.merge(
+
+  // Used for triggering a drain event
+  const trigger = Rx.Observable.merge(
     Rx.Observable.fromEvent(stream, 'drain').mapTo(false),
     pauser
   );
 
+  // Make sure the source is now hot
   const hotSource = source.publish();
 
-  const sub = drainer
+  const sub = trigger
     .takeUntil(hotSource.last())
-    .flatMap(paused => paused ?
-      hotSource.buffer(drainer.first(x => !x)).take(1) :
-      Rx.Observable.of(hotSource.takeUntil(drainer.first(x => x)))
-    )
+    .switchMap(paused => source.let(drainStream(paused, trigger)))
     .mergeAll()
-    // .flatMap(x => Array.isArray(x) ? x : Rx.Observable.of(x))
     .subscribe(
       data => !stream.write(String(data), encoding) && pauser.next(true),
       err => stream.emit('error', err),
@@ -29,7 +41,6 @@ function writeToStream(source, stream, encoding) {
   sub.add(hotSource.connect());
 
   return sub;
-
 }
 
 module.exports = writeToStream;

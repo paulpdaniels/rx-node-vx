@@ -1,28 +1,32 @@
 const Rx = require('rxjs');
 
+function afterSubscribe(fn) {
+  return source => new Rx.Observable(observer => {
+    const subscription = source.subscribe(observer);
+    try {
+      fn();
+    } catch (e) {
+      observer.error(e);
+      subscription.unsubscribe();
+    }
+
+    return subscription;
+  });
+}
+
 function fromStream(stream, finishEventName, dataEventName) {
   stream.pause();
 
   finishEventName || (finishEventName = 'end');
   dataEventName || (dataEventName = 'data');
 
-  return new Rx.Observable(observer => {
-    const dataHandler = data => observer.next(data);
-    const errorHandler = err => observer.error(err);
-    const completeHandler = () => observer.complete();
-
-    stream.addListener(dataEventName, dataHandler);
-    stream.addListener('error', errorHandler);
-    stream.addListener(finishEventName, completeHandler);
-
-    stream.resume();
-
-    return () => {
-      stream.removeListener(dataEventName, dataHandler);
-      stream.removeListener('error', errorHandler);
-      stream.removeListener(finishEventName, completeHandler);
-    }
-  }).share();
+  return Rx.Observable.merge(
+    Rx.Observable.fromEvent(stream, dataEventName),
+    Rx.Observable.fromEvent(stream, 'error', e => { throw e; })
+  )
+    .takeUntil(Rx.Observable.fromEvent(stream, finishEventName))
+    .let(afterSubscribe(() => stream.resume()))
+    .share();
 }
 
 function fromReadableStream(stream, dataEventName) {
