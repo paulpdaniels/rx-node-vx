@@ -1,6 +1,6 @@
 {
   "name": "rx-node-vx",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A port of the rx-node project for v5 and beyond",
   "repository": {
     "type": "git",
