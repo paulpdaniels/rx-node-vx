@@ -1,4 +1,7 @@
 # rx-node-vx
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/paulpdaniels/rx-node-vx.svg)](https://greenkeeper.io/)
+
 A port of the rx-node project for v5 and beyond. Note that this is only for v5 and above. If you are still using RxJS 4 then you should be using: https://github.com/Reactive-Extensions/rx-node
 
 ## OVERVIEW
